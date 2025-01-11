@@ -5,10 +5,8 @@ type category =
   [@@deriving yojson]
 
 type transaction = {
-  date : CalenderLib.Date.t;
+  date : CalendarLib.Date.t;
   amount : float;
-  description : category
+  category : category;
+  description : string;
 } [@@deriving yojson]
-
-let transaction = ref []
-

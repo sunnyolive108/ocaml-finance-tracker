@@ -1,8 +1,8 @@
 open Core
+open Datatypes
 
-(* color definitions *)
 let ansi_color code fmt =
-  printf ("\xlb[" ^ code ^ "m" ^ fmt ^ "\xlb[0m")
+  printf ("\x1b[" ^ code ^ "m" ^ fmt ^ "\x1b[0m")
 
 let red fmt = ansi_color "31" fmt
 let green fmt = ansi_color "32" fmt
@@ -12,22 +12,6 @@ let magenta fmt = ansi_color "35" fmt
 let cyan fmt = ansi_color "36" fmt
 let white fmt = ansi_color "37" fmt
 
-type category = 
-  | Food | Entertainment | Investment | Misc
-
-type transaction = {
-  date : CalendarLib.Date.t;
-  amount : float;
-  description : string;
-  category : category;
-}
-
-let transactions = ref []
-
-let add_transaction date amount desc cat =
-  let new_txn = { date; amount; description = desc; category = cat } in
-  transactions := new_txn :: !transactions
-
 let display_transaction t = 
   cyan "%s: " (CalendarLib.Printer.Date.to_string t.date);
   green "%.2f " t.amount;
@@ -36,16 +20,16 @@ let display_transaction t =
     | Entertainment -> "Entertainment"
     | Investment -> "Investment"
     | Misc -> "Misc"
-);
-white "%s\n" t.destination
+  );
+  white "%s\n" t.description
 
-let view_transactions () =
+let view_transactions transactions =
   if List.is_empty !transactions then 
     magenta "No transactions recorded\n"
   else 
     List.iter !transactions ~f:display_transaction
 
-let add_transaction_cli () =
+let add_transaction_cli transactions =
   blue "Enter date (YYYY-MM-DD): ";
   let date = CalendarLib.Printer.Date.from_string (read_line ()) in
   blue "Enter amount: ";
@@ -56,20 +40,26 @@ let add_transaction_cli () =
   let cat = match read_line () with
     | "Food" -> Food | "Ent" -> Entertainment 
     | "Inv" -> Investment | _ -> Misc in
-  add_transaction date amount desc cat;
+  Input.add_transaction date amount desc cat transactions;
   green "Transaction added!\n"
 
-let rec cli_loop () =
+let rec cli_loop transactions =
   white "OCaml Finance Tracker:\n";
   white "  - [a]dd transactions\n";
   white "  - [v]iew transactions\n";
+  white "  - [s]ave transactions\n";
+  white "  - [l]oad transactions\n";
   white "  - [q]uit\n";
   match String.lowercase (read_line ()) with
-  | "a" -> add_transaction_cli (); cli_loop ()
-  | "v" -> view_transactions (); cli_loop ()
+  | "a" -> add_transaction_cli transactions; cli_loop transactions
+  | "v" -> view_transactions transactions; cli_loop transactions
+  | "s" -> blue "Enter filename to save: "; let filename = read_line () in SaveLoad.save_transactions filename transactions; cli_loop transactions
+  | "l" -> blue "Enter filename to load: "; let filename = read_line () in SaveLoad.load_transactions filename transactions; cli_loop transactions
   | "q" -> red "Goodbye!  :)\n"
-  |  _  -> red "Unknown command. You may try again.\n"; cli_loop ()
+  |  _  -> red "Unknown command. You may try again.\n"; cli_loop transactions
 
-let () =
-  cli_loop ()
+let main () =
+  let transactions = ref [] in
+  cli_loop transactions
 
+let () = main ()
