@@ -1,5 +1,5 @@
 open Core
-
+     
 type category =
   | Food | Entertainment | Investment | Misc
   [@@deriving yojson]
